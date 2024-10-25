@@ -43,6 +43,8 @@ namespace Apostol {
         class CPGHTTP: public CFetchCommon {
         private:
 
+            CStringList m_API;
+
             void InitMethods() override;
 
             void PQGet(CHTTPServerConnection *AConnection, const CString &Path);
@@ -62,6 +64,8 @@ namespace Apostol {
             static class CPGHTTP *CreateModule(CModuleProcess *AProcess) {
                 return new CPGHTTP(AProcess);
             }
+
+            void Initialization(CModuleProcess *AProcess) override;
 
             bool Enabled() override;
 

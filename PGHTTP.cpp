@@ -169,6 +169,14 @@ namespace Apostol {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPGHTTP::Initialization(CModuleProcess *AProcess) {
+            CFetchCommon::Initialization(AProcess);
+            Config()->IniFile().ReadSectionValues(CString().Format("%s/endpoints", SectionName()).c_str(), &m_API);
+            if (m_API.Count() == 0)
+                m_API.Add("/api/*");
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         bool CPGHTTP::Enabled() {
             if (m_ModuleStatus == msUnknown)
                 m_ModuleStatus = Config()->IniFile().ReadBool(SectionName().c_str(), "enable", true) ? msEnabled : msDisabled;
@@ -177,7 +185,7 @@ namespace Apostol {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CPGHTTP::CheckLocation(const CLocation &Location) {
-            return Location.pathname.SubString(0, 5) == _T("/api/");
+            return AllowedLocation(Location.pathname, m_API);
         }
         //--------------------------------------------------------------------------------------------------------------
     }
