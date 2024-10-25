@@ -43,7 +43,7 @@ namespace Apostol {
         class CPGHTTP: public CFetchCommon {
         private:
 
-            CStringList m_API;
+            CStringList m_EndPoints;
 
             void InitMethods() override;
 

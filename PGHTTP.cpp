@@ -171,9 +171,9 @@ namespace Apostol {
 
         void CPGHTTP::Initialization(CModuleProcess *AProcess) {
             CFetchCommon::Initialization(AProcess);
-            Config()->IniFile().ReadSectionValues(CString().Format("%s/endpoints", SectionName()).c_str(), &m_API);
-            if (m_API.Count() == 0)
-                m_API.Add("/api/*");
+            Config()->IniFile().ReadSectionValues(CString().Format("%s/endpoints", SectionName()).c_str(), &m_EndPoints);
+            if (m_EndPoints.Count() == 0)
+                m_EndPoints.Add("/api/*");
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -185,7 +185,7 @@ namespace Apostol {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CPGHTTP::CheckLocation(const CLocation &Location) {
-            return AllowedLocation(Location.pathname, m_API);
+            return AllowedLocation(Location.pathname, m_EndPoints);
         }
         //--------------------------------------------------------------------------------------------------------------
     }
