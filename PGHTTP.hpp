@@ -43,12 +43,14 @@ namespace Apostol {
         class CPGHTTP: public CFetchCommon {
         private:
 
-            CStringList m_EndPoints;
+            CStringListPairs m_Profiles;
 
             void InitMethods() override;
 
             void PQGet(CHTTPServerConnection *AConnection, const CString &Path);
             void PQPost(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
+
+            static void InitConfig(const CIniFile &IniFile, const CString &Section, CStringList &Config);
 
         protected:
 
@@ -61,7 +63,7 @@ namespace Apostol {
 
             ~CPGHTTP() override = default;
 
-            static class CPGHTTP *CreateModule(CModuleProcess *AProcess) {
+            static CPGHTTP *CreateModule(CModuleProcess *AProcess) {
                 return new CPGHTTP(AProcess);
             }
 

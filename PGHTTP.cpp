@@ -27,6 +27,9 @@ Author:
 #include "PGHTTP.hpp"
 //----------------------------------------------------------------------------------------------------------------------
 
+#define CONFIG_FILE_NAME     "conf/pg_http.conf"
+#define SECTION_ENDPOINTS    "endpoints"
+
 extern "C++" {
 
 namespace Apostol {
@@ -169,11 +172,18 @@ namespace Apostol {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPGHTTP::InitConfig(const CIniFile &IniFile, const CString &Section, CStringList &Config) {
+            if (Section == SECTION_ENDPOINTS) {
+                IniFile.ReadSectionValues(Section.c_str(), &Config);
+                if (Config.Count() == 0)
+                    Config.Add("/api/*");
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CPGHTTP::Initialization(CModuleProcess *AProcess) {
             CFetchCommon::Initialization(AProcess);
-            Config()->IniFile().ReadSectionValues(CString().Format("%s/endpoints", SectionName()).c_str(), &m_EndPoints);
-            if (m_EndPoints.Count() == 0)
-                m_EndPoints.Add("/api/*");
+            LoadConfig(Config()->IniFile().ReadString(SectionName().c_str(), "config", CONFIG_FILE_NAME), m_Profiles, InitConfig);
         }
         //--------------------------------------------------------------------------------------------------------------
 
@@ -185,7 +195,7 @@ namespace Apostol {
         //--------------------------------------------------------------------------------------------------------------
 
         bool CPGHTTP::CheckLocation(const CLocation &Location) {
-            return AllowedLocation(Location.pathname, m_EndPoints);
+            return AllowedLocation(Location.pathname, m_Profiles[SECTION_ENDPOINTS]);
         }
         //--------------------------------------------------------------------------------------------------------------
     }
