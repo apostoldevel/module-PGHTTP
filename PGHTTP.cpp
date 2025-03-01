@@ -184,6 +184,9 @@ namespace Apostol {
         void CPGHTTP::Initialization(CModuleProcess *AProcess) {
             CFetchCommon::Initialization(AProcess);
             LoadConfig(Config()->IniFile().ReadString(SectionName().c_str(), "config", CONFIG_FILE_NAME), m_Profiles, InitConfig);
+            auto& Config = m_Profiles[SECTION_ENDPOINTS];
+            if (Config.Count() == 0)
+                Config.Add("/api/*");
         }
         //--------------------------------------------------------------------------------------------------------------
 
