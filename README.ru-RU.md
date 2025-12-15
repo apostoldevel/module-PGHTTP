@@ -1,6 +1,6 @@
 [![en](https://img.shields.io/badge/lang-en-green.svg)](https://github.com/apostoldevel/module-PGHTTP/blob/master/README.md)
 
-Postgres Fetch
+Postgres HTTP
 -
 **PGHTTP** - модуль для [Апостол](https://github.com/apostoldevel/apostol).
 
