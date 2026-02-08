@@ -49,6 +49,9 @@ namespace Apostol {
 
             void PQGet(CHTTPServerConnection *AConnection, const CString &Path);
             void PQPost(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
+            void PQPatch(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
+            void PQPut(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
+            void PQDelete(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
 
             static void InitConfig(const CIniFile &IniFile, const CString &Section, CStringList &Config);
 
@@ -56,6 +59,9 @@ namespace Apostol {
 
             void DoGet(CHTTPServerConnection *AConnection) override;
             void DoPost(CHTTPServerConnection *AConnection);
+            void DoPatch(CHTTPServerConnection *AConnection);
+            void DoPut(CHTTPServerConnection *AConnection);
+            void DoDelete(CHTTPServerConnection *AConnection);
 
         public:
 

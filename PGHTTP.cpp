@@ -49,24 +49,24 @@ namespace Apostol {
 
         void CPGHTTP::InitMethods() {
 #if defined(_GLIBCXX_RELEASE) && (_GLIBCXX_RELEASE >= 9)
-            m_Methods.AddObject(_T("GET")    , (CObject *) new CMethodHandler(true , [this](auto && Connection) { DoGet(Connection); }));
-            m_Methods.AddObject(_T("POST")   , (CObject *) new CMethodHandler(true , [this](auto && Connection) { DoPost(Connection); }));
-            m_Methods.AddObject(_T("OPTIONS"), (CObject *) new CMethodHandler(true , [this](auto && Connection) { DoOptions(Connection); }));
-            m_Methods.AddObject(_T("HEAD")   , (CObject *) new CMethodHandler(false, [this](auto && Connection) { MethodNotAllowed(Connection); }));
-            m_Methods.AddObject(_T("PUT")    , (CObject *) new CMethodHandler(false, [this](auto && Connection) { MethodNotAllowed(Connection); }));
-            m_Methods.AddObject(_T("DELETE") , (CObject *) new CMethodHandler(false, [this](auto && Connection) { MethodNotAllowed(Connection); }));
-            m_Methods.AddObject(_T("TRACE")  , (CObject *) new CMethodHandler(false, [this](auto && Connection) { MethodNotAllowed(Connection); }));
-            m_Methods.AddObject(_T("PATCH")  , (CObject *) new CMethodHandler(false, [this](auto && Connection) { MethodNotAllowed(Connection); }));
-            m_Methods.AddObject(_T("CONNECT"), (CObject *) new CMethodHandler(false, [this](auto && Connection) { MethodNotAllowed(Connection); }));
+            m_Methods.AddObject(_T("GET")    , (CObject *) new CMethodHandler(true , [this](const auto& Connection) { DoGet(Connection); }));
+            m_Methods.AddObject(_T("POST")   , (CObject *) new CMethodHandler(true , [this](const auto& Connection) { DoPost(Connection); }));
+            m_Methods.AddObject(_T("OPTIONS"), (CObject *) new CMethodHandler(true , [this](const auto& Connection) { DoOptions(Connection); }));
+            m_Methods.AddObject(_T("HEAD")   , (CObject *) new CMethodHandler(false, [this](const auto& Connection) { MethodNotAllowed(Connection); }));
+            m_Methods.AddObject(_T("PUT")    , (CObject *) new CMethodHandler(true , [this](const auto& Connection) { DoPut(Connection); }));
+            m_Methods.AddObject(_T("DELETE") , (CObject *) new CMethodHandler(true , [this](const auto& Connection) { DoDelete(Connection); }));
+            m_Methods.AddObject(_T("TRACE")  , (CObject *) new CMethodHandler(false, [this](const auto& Connection) { MethodNotAllowed(Connection); }));
+            m_Methods.AddObject(_T("PATCH")  , (CObject *) new CMethodHandler(true , [this](const auto& Connection) { DoPatch(Connection); }));
+            m_Methods.AddObject(_T("CONNECT"), (CObject *) new CMethodHandler(false, [this](const auto& Connection) { MethodNotAllowed(Connection); }));
 #else
             m_Methods.AddObject(_T("GET")    , (CObject *) new CMethodHandler(true , std::bind(&CPGHTTP::DoGet, this, _1)));
             m_Methods.AddObject(_T("POST")   , (CObject *) new CMethodHandler(true , std::bind(&CPGHTTP::DoPost, this, _1)));
             m_Methods.AddObject(_T("OPTIONS"), (CObject *) new CMethodHandler(true , std::bind(&CPGHTTP::DoOptions, this, _1)));
             m_Methods.AddObject(_T("HEAD")   , (CObject *) new CMethodHandler(false, std::bind(&CPGHTTP::MethodNotAllowed, this, _1)));
-            m_Methods.AddObject(_T("PUT")    , (CObject *) new CMethodHandler(false, std::bind(&CPGHTTP::MethodNotAllowed, this, _1)));
-            m_Methods.AddObject(_T("DELETE") , (CObject *) new CMethodHandler(false, std::bind(&CPGHTTP::MethodNotAllowed, this, _1)));
+            m_Methods.AddObject(_T("PUT")    , (CObject *) new CMethodHandler(true , std::bind(&CPGHTTP::DoPut, this, _1)));
+            m_Methods.AddObject(_T("DELETE") , (CObject *) new CMethodHandler(true , std::bind(&CPGHTTP::DoDelete, this, _1)));
             m_Methods.AddObject(_T("TRACE")  , (CObject *) new CMethodHandler(false, std::bind(&CPGHTTP::MethodNotAllowed, this, _1)));
-            m_Methods.AddObject(_T("PATCH")  , (CObject *) new CMethodHandler(false, std::bind(&CPGHTTP::MethodNotAllowed, this, _1)));
+            m_Methods.AddObject(_T("PATCH")  , (CObject *) new CMethodHandler(true , std::bind(&CPGHTTP::DoPatch, this, _1)));
             m_Methods.AddObject(_T("CONNECT"), (CObject *) new CMethodHandler(false, std::bind(&CPGHTTP::MethodNotAllowed, this, _1)));
 #endif
         }
@@ -126,6 +126,90 @@ namespace Apostol {
         }
         //--------------------------------------------------------------------------------------------------------------
 
+        void CPGHTTP::PQPatch(CHTTPServerConnection* AConnection, const CString& Path, const CString& Body) {
+
+            const auto &caRequest = AConnection->Request();
+
+            CStringList SQL;
+
+            const auto &caHeaders = HeadersToJson(caRequest.Headers).ToString();
+            const auto &caParams = ParamsToJson(caRequest.Params).ToString();
+            const auto &caBody = Body.IsEmpty() ? "null" : PQQuoteLiteral(Body);
+
+            SQL.Add(CString()
+                            .MaxFormatSize(256 + Path.Size() + caHeaders.Size() + caParams.Size() + caBody.Size())
+                            .Format("SELECT * FROM http.patch(%s, %s::jsonb, %s::jsonb, %s::jsonb);",
+                                    PQQuoteLiteral(Path).c_str(),
+                                    PQQuoteLiteral(caHeaders).c_str(),
+                                    PQQuoteLiteral(caParams).c_str(),
+                                    caBody.c_str()
+                            ));
+
+            try {
+                ExecSQL(SQL, AConnection);
+            } catch (Delphi::Exception::Exception &E) {
+                AConnection->CloseConnection(true);
+                ReplyError(AConnection, CHTTPReply::bad_request, E.what());
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPGHTTP::PQPut(CHTTPServerConnection* AConnection, const CString& Path, const CString& Body) {
+
+            const auto &caRequest = AConnection->Request();
+
+            CStringList SQL;
+
+            const auto &caHeaders = HeadersToJson(caRequest.Headers).ToString();
+            const auto &caParams = ParamsToJson(caRequest.Params).ToString();
+            const auto &caBody = Body.IsEmpty() ? "null" : PQQuoteLiteral(Body);
+
+            SQL.Add(CString()
+                            .MaxFormatSize(256 + Path.Size() + caHeaders.Size() + caParams.Size() + caBody.Size())
+                            .Format("SELECT * FROM http.put(%s, %s::jsonb, %s::jsonb, %s::jsonb);",
+                                    PQQuoteLiteral(Path).c_str(),
+                                    PQQuoteLiteral(caHeaders).c_str(),
+                                    PQQuoteLiteral(caParams).c_str(),
+                                    caBody.c_str()
+                            ));
+
+            try {
+                ExecSQL(SQL, AConnection);
+            } catch (Delphi::Exception::Exception &E) {
+                AConnection->CloseConnection(true);
+                ReplyError(AConnection, CHTTPReply::bad_request, E.what());
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPGHTTP::PQDelete(CHTTPServerConnection* AConnection, const CString& Path, const CString& Body) {
+
+            const auto &caRequest = AConnection->Request();
+
+            CStringList SQL;
+
+            const auto &caHeaders = HeadersToJson(caRequest.Headers).ToString();
+            const auto &caParams = ParamsToJson(caRequest.Params).ToString();
+            const auto &caBody = Body.IsEmpty() ? "null" : PQQuoteLiteral(Body);
+
+            SQL.Add(CString()
+                            .MaxFormatSize(256 + Path.Size() + caHeaders.Size() + caParams.Size() + caBody.Size())
+                            .Format("SELECT * FROM http.delete(%s, %s::jsonb, %s::jsonb, %s::jsonb);",
+                                    PQQuoteLiteral(Path).c_str(),
+                                    PQQuoteLiteral(caHeaders).c_str(),
+                                    PQQuoteLiteral(caParams).c_str(),
+                                    caBody.c_str()
+                            ));
+
+            try {
+                ExecSQL(SQL, AConnection);
+            } catch (Delphi::Exception::Exception &E) {
+                AConnection->CloseConnection(true);
+                ReplyError(AConnection, CHTTPReply::bad_request, E.what());
+            }
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
         void CPGHTTP::DoGet(CHTTPServerConnection *AConnection) {
 
             const auto &caRequest = AConnection->Request();
@@ -169,6 +253,90 @@ namespace Apostol {
             const auto& caBody = bContentJson ? caRequest.Content : Json.ToString();
 
             PQPost(AConnection, path, caBody);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPGHTTP::DoPatch(CHTTPServerConnection* AConnection) {
+
+            const auto &caRequest = AConnection->Request();
+            auto &Reply = AConnection->Reply();
+
+            Reply.ContentType = CHTTPReply::json;
+
+            const auto &path = caRequest.Location.pathname;
+
+            if (path.IsEmpty()) {
+                AConnection->SendStockReply(CHTTPReply::not_found);
+                return;
+            }
+
+            const auto& caContentType = caRequest.Headers[_T("Content-Type")].Lower();
+            const auto bContentJson = (caContentType.Find(_T("application/json")) != CString::npos);
+
+            CJSON Json;
+            if (!bContentJson) {
+                ContentToJson(caRequest, Json);
+            }
+
+            const auto& caBody = bContentJson ? caRequest.Content : Json.ToString();
+
+            PQPatch(AConnection, path, caBody);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPGHTTP::DoPut(CHTTPServerConnection* AConnection) {
+
+            const auto &caRequest = AConnection->Request();
+            auto &Reply = AConnection->Reply();
+
+            Reply.ContentType = CHTTPReply::json;
+
+            const auto &path = caRequest.Location.pathname;
+
+            if (path.IsEmpty()) {
+                AConnection->SendStockReply(CHTTPReply::not_found);
+                return;
+            }
+
+            const auto& caContentType = caRequest.Headers[_T("Content-Type")].Lower();
+            const auto bContentJson = (caContentType.Find(_T("application/json")) != CString::npos);
+
+            CJSON Json;
+            if (!bContentJson) {
+                ContentToJson(caRequest, Json);
+            }
+
+            const auto& caBody = bContentJson ? caRequest.Content : Json.ToString();
+
+            PQPut(AConnection, path, caBody);
+        }
+        //--------------------------------------------------------------------------------------------------------------
+
+        void CPGHTTP::DoDelete(CHTTPServerConnection* AConnection) {
+
+            const auto &caRequest = AConnection->Request();
+            auto &Reply = AConnection->Reply();
+
+            Reply.ContentType = CHTTPReply::json;
+
+            const auto &path = caRequest.Location.pathname;
+
+            if (path.IsEmpty()) {
+                AConnection->SendStockReply(CHTTPReply::not_found);
+                return;
+            }
+
+            const auto& caContentType = caRequest.Headers[_T("Content-Type")].Lower();
+            const auto bContentJson = (caContentType.Find(_T("application/json")) != CString::npos);
+
+            CJSON Json;
+            if (!bContentJson) {
+                ContentToJson(caRequest, Json);
+            }
+
+            const auto& caBody = bContentJson ? caRequest.Content : Json.ToString();
+
+            PQDelete(AConnection, path, caBody);
         }
         //--------------------------------------------------------------------------------------------------------------
 

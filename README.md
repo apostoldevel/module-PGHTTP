@@ -11,7 +11,7 @@ Description
 
 Incoming requests
 -
-The module directs incoming HTTP `GET` and `POST` requests to the PostgreSQL database by calling the `http.get` and `http.post` functions, respectively, to process them.
+The module directs incoming HTTP `GET`, `POST`, `PATCH`, `PUT`, `DELETE` requests to the PostgreSQL database by calling the `http.get`, `http.post`, `http.patch`, `http.put`, `http.delete` functions, respectively, to process them.
 
 Incoming requests are recorded in the `http.log` table.
 
@@ -27,14 +27,13 @@ Follow the instructions for building and installing [Apostol](https://github.com
 General information
 -
 
-* Base endpoint URL: [http://localhost:8080/api/v1](http://localhost:8080/api/v1);
-    * The module only accepts requests whose path starts with `/api` (this can be changed in the source code).
+* Default endpoint URL: [http://localhost:8080/api/v1](http://localhost:8080/api/v1);
 * All endpoints return either a `JSON object` or a `JSON array` depending on the number of records in the response. This behavior can be changed by adding the `?data_array=true` parameter to the request, in which case the response will be a `JSON array` regardless of the number of records.
 
 * Endpoint URL format:
-~~~
-http[s]://<hosthame>[:<port>]/api/<route>
-~~~
+```url
+http[s]://<hosthame>[:<port>]/<route1>/<route2>/.../<routeN>
+```
 
 ## HTTP Status Codes
 * HTTP `4XX` status codes are used for client-side errors - the problem is on the client side.
@@ -42,18 +41,18 @@ http[s]://<hosthame>[:<port>]/api/<route>
 
 ## Passing Parameters
 * For `GET` endpoints, parameters should be sent as a `query string`.
-* For `POST` endpoints, some parameters can be sent as a `query string`, and some as a request body:
+* For others endpoints, some parameters can be sent as a `query string`, and some as a request body:
 * The following content types are allowed when sending parameters as a request `body`:
     * `application/x-www-form-urlencoded` for `query string`;
     * `multipart/form-data` for `HTML forms`;
     * `application/json` for `JSON`.
 * Parameters can be sent in any order.
 
-Function Parameters
+Function Examples
 -
 
 To handle a `GET` request:
-~~~sql
+```sql
 /**
 * @param {text} path - Path
 * @param {jsonb} headers - HTTP headers
@@ -65,10 +64,80 @@ CREATE OR REPLACE FUNCTION http.get (
   headers   jsonb,
   params    jsonb DEFAULT null
 ) RETURNS   SETOF json
-~~~
+AS $$
+DECLARE
+  r         record;
+
+  nId       bigint;
+
+  cBegin    timestamptz;
+
+  vMessage  text;
+  vContext  text;
+BEGIN
+  nId := http.write_to_log(path, headers, params);
+
+  IF split_part(path, '/', 3) != 'v1' THEN
+    RAISE EXCEPTION 'Invalid API version.';
+  END IF;
+
+  cBegin := clock_timestamp();
+
+  FOR r IN SELECT * FROM jsonb_each(headers)
+  LOOP
+    -- parse headers here
+  END LOOP;
+
+  CASE split_part(path, '/', 4)
+  WHEN 'ping' THEN
+
+    RETURN NEXT json_build_object('code', 200, 'message', 'OK');
+
+  WHEN 'time' THEN
+
+    RETURN NEXT json_build_object('serverTime', trunc(extract(EPOCH FROM Now())));
+
+  WHEN 'headers' THEN
+
+    RETURN NEXT coalesce(headers, jsonb_build_object());
+
+  WHEN 'params' THEN
+
+    RETURN NEXT coalesce(params, jsonb_build_object());
+
+  WHEN 'log' THEN
+
+    FOR r IN SELECT * FROM http.log ORDER BY id DESC
+    LOOP
+      RETURN NEXT row_to_json(r);
+    END LOOP;
+
+  ELSE
+
+    RETURN NEXT json_build_object('error', json_build_object('code', 404, 'message', format('Path "%s" not found.', path)));
+
+  END CASE;
+
+  UPDATE http.log SET runtime = age(clock_timestamp(), cBegin) WHERE id = nId;
+
+  RETURN;
+EXCEPTION
+WHEN others THEN
+  GET STACKED DIAGNOSTICS vMessage = MESSAGE_TEXT, vContext = PG_EXCEPTION_CONTEXT;
+
+  PERFORM http.write_to_log(path, headers, params, null, 'GET', vMessage, vContext);
+
+  RETURN NEXT json_build_object('error', json_build_object('code', 400, 'message', vMessage));
+
+  RETURN;
+END;
+$$ LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = http, pg_temp;
+```
 
 To handle a `POST` request:
-~~~sql
+```sql
 /**
 * @param {text} path - Path
 * @param {jsonb} headers - HTTP headers
@@ -82,4 +151,71 @@ CREATE OR REPLACE FUNCTION http.post (
   params    jsonb DEFAULT null,
   body      jsonb DEFAULT null
 ) RETURNS   SETOF json
-~~~
+AS $$
+DECLARE
+  r         record;
+
+  nId       bigint;
+
+  cBegin    timestamptz;
+
+  vMessage  text;
+  vContext  text;
+BEGIN
+  nId := http.write_to_log(path, headers, params, body, 'POST');
+
+  IF split_part(path, '/', 3) != 'v1' THEN
+    RAISE EXCEPTION 'Invalid API version.';
+  END IF;
+
+  FOR r IN SELECT * FROM jsonb_each(headers)
+  LOOP
+    -- parse headers here
+  END LOOP;
+
+  cBegin := clock_timestamp();
+
+  CASE split_part(path, '/', 4)
+  WHEN 'ping' THEN
+
+    RETURN NEXT json_build_object('code', 200, 'message', 'OK');
+
+  WHEN 'time' THEN
+
+    RETURN NEXT json_build_object('serverTime', trunc(extract(EPOCH FROM Now())));
+
+  WHEN 'headers' THEN
+
+    RETURN NEXT coalesce(headers, jsonb_build_object());
+
+  WHEN 'params' THEN
+
+    RETURN NEXT coalesce(params, jsonb_build_object());
+
+  WHEN 'body' THEN
+
+    RETURN NEXT coalesce(body, jsonb_build_object());
+
+  ELSE
+
+    RAISE EXCEPTION 'Path "%" not found.', path;
+
+  END CASE;
+
+  UPDATE http.log SET runtime = age(clock_timestamp(), cBegin) WHERE id = nId;
+
+  RETURN;
+EXCEPTION
+WHEN others THEN
+  GET STACKED DIAGNOSTICS vMessage = MESSAGE_TEXT, vContext = PG_EXCEPTION_CONTEXT;
+
+  PERFORM http.write_to_log(path, headers, params, body, 'POST', vMessage, vContext);
+
+  RETURN NEXT json_build_object('error', json_build_object('code', 400, 'message', vMessage));
+
+  RETURN;
+END;
+$$ LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = http, pg_temp;
+```
