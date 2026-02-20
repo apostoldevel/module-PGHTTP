@@ -15,6 +15,33 @@ The module directs incoming HTTP `GET`, `POST`, `PATCH`, `PUT`, `DELETE` request
 
 Incoming requests are recorded in the `http.log` table.
 
+Database module
+-
+
+PGHTTP is tightly coupled to the **`http`** module of [db-platform](https://github.com/apostoldevel/db-platform) (`db/sql/platform/http/`).
+
+All incoming HTTP traffic is dispatched to PL/pgSQL handlers and logged in this module:
+
+| Object | Purpose |
+|--------|---------|
+| `http.log` | Audit log of every incoming request (path, headers, params, body, runtime) |
+| `http.write_to_log(...)` | Helper function called by each handler to record the request before processing |
+| `http.get(path, headers, params)` | PL/pgSQL handler for `GET` requests |
+| `http.post(path, headers, params, body)` | PL/pgSQL handler for `POST` requests |
+| `http.patch(path, headers, params, body)` | PL/pgSQL handler for `PATCH` requests |
+| `http.put(path, headers, params, body)` | PL/pgSQL handler for `PUT` requests |
+| `http.delete(path, headers, params, body)` | PL/pgSQL handler for `DELETE` requests |
+
+> **Note:** PGHTTP handles **incoming** HTTP requests dispatched into PL/pgSQL. For **outgoing** HTTP requests initiated from PL/pgSQL, see [PGFetch](https://github.com/apostoldevel/module-PGFetch) — both modules share the same `http` db-platform module.
+
+Configuration
+-
+
+```ini
+[module/PGHTTP]
+enable=true
+```
+
 Database installation
 -
 Follow the instructions for installing PostgreSQL in the description of [Apostol](https://github.com/apostoldevel/apostol#postgresql).

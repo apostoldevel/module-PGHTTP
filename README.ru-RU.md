@@ -15,6 +15,33 @@ Postgres HTTP
 
 Входящие запросы записываются в таблицу `http.log`.
 
+Модуль базы данных
+-
+
+PGHTTP тесно связан с модулем **`http`** платформы [db-platform](https://github.com/apostoldevel/db-platform) (`db/sql/platform/http/`).
+
+Весь входящий HTTP-трафик диспетчеризуется в PL/pgSQL-обработчики и журналируется в этом модуле:
+
+| Объект | Назначение |
+|--------|------------|
+| `http.log` | Журнал аудита каждого входящего запроса (путь, заголовки, параметры, тело, время выполнения) |
+| `http.write_to_log(...)` | Вспомогательная функция, вызываемая каждым обработчиком для записи запроса перед обработкой |
+| `http.get(path, headers, params)` | PL/pgSQL-обработчик `GET`-запросов |
+| `http.post(path, headers, params, body)` | PL/pgSQL-обработчик `POST`-запросов |
+| `http.patch(path, headers, params, body)` | PL/pgSQL-обработчик `PATCH`-запросов |
+| `http.put(path, headers, params, body)` | PL/pgSQL-обработчик `PUT`-запросов |
+| `http.delete(path, headers, params, body)` | PL/pgSQL-обработчик `DELETE`-запросов |
+
+> **Примечание:** PGHTTP обрабатывает **входящие** HTTP-запросы, диспетчеризуя их в PL/pgSQL. Для **исходящих** HTTP-запросов, инициируемых из PL/pgSQL, используйте [PGFetch](https://github.com/apostoldevel/module-PGFetch) — оба модуля разделяют один и тот же модуль `http` платформы db-platform.
+
+Настройка
+-
+
+```ini
+[module/PGHTTP]
+enable=true
+```
+
 Установка базы данных
 -
 Следуйте указаниям по установке PostgreSQL в описании [Апостол](https://github.com/apostoldevel/apostol#postgresql)
