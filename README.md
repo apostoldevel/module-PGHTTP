@@ -3,7 +3,7 @@
 Postgres HTTP
 -
 
-**PGHTTP** - a module for [Apostol](https://github.com/apostoldevel/apostol).
+**PGHTTP** - a module for [Apostol](https://github.com/apostoldevel/apostol) + [db-platform](https://github.com/apostoldevel/db-platform) — **Apostol CRM**[^crm].
 
 Description
 -
@@ -246,3 +246,5 @@ $$ LANGUAGE plpgsql
   SECURITY DEFINER
   SET search_path = http, pg_temp;
 ```
+
+[^crm]: **Apostol CRM** is an abstract term, not a standalone product. It refers to any project that uses both the [Apostol](https://github.com/apostoldevel/apostol) C++ framework and [db-platform](https://github.com/apostoldevel/db-platform) together through purpose-built modules and processes. Each framework can be used independently; combined, they form a full-stack backend platform.
