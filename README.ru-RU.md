@@ -1,8 +1,8 @@
-[![en](https://img.shields.io/badge/lang-en-green.svg)](https://github.com/apostoldevel/module-PGHTTP/blob/master/README.md)
+[![en](https://img.shields.io/badge/lang-en-green.svg)](README.md)
 
 Postgres HTTP
 -
-**PGHTTP** - модуль для [Apostol](https://github.com/apostoldevel/apostol) + [db-platform](https://github.com/apostoldevel/db-platform) — **Apostol CRM**[^crm].
+**PGHTTP** — модуль для [Apostol](https://github.com/apostoldevel/apostol) + [db-platform](https://github.com/apostoldevel/db-platform) — **Apostol CRM**[^crm].
 
 Описание
 -
@@ -11,14 +11,14 @@ Postgres HTTP
 Входящие запросы
 -
 
-Модуль направляет входящие HTTP методы `GET`, `POST`, `PATCH`, `PUT`, `DELETE` в базу данных PostgreSQL вызывая для их обработки соответствующие функции `http.get`, `http.post`, `http.patch`, `http.put`, `http.delete`.
+Модуль направляет входящие HTTP методы `GET`, `POST`, `PUT`, `PATCH`, `DELETE` в базу данных PostgreSQL вызывая для их обработки соответствующие функции `http.get`, `http.post`, `http.put`, `http.patch`, `http.delete`.
 
 Входящие запросы записываются в таблицу `http.log`.
 
 Модуль базы данных
 -
 
-PGHTTP тесно связан с модулем **`http`** платформы [db-platform](https://github.com/apostoldevel/db-platform) (`db/sql/platform/http/`).
+PGHTTP тесно связан с модулем **`http`** базы данных — [db-http](https://github.com/apostoldevel/db-http).
 
 Весь входящий HTTP-трафик диспетчеризуется в PL/pgSQL-обработчики и журналируется в этом модуле:
 
@@ -28,27 +28,32 @@ PGHTTP тесно связан с модулем **`http`** платформы [
 | `http.write_to_log(...)` | Вспомогательная функция, вызываемая каждым обработчиком для записи запроса перед обработкой |
 | `http.get(path, headers, params)` | PL/pgSQL-обработчик `GET`-запросов |
 | `http.post(path, headers, params, body)` | PL/pgSQL-обработчик `POST`-запросов |
-| `http.patch(path, headers, params, body)` | PL/pgSQL-обработчик `PATCH`-запросов |
 | `http.put(path, headers, params, body)` | PL/pgSQL-обработчик `PUT`-запросов |
+| `http.patch(path, headers, params, body)` | PL/pgSQL-обработчик `PATCH`-запросов |
 | `http.delete(path, headers, params, body)` | PL/pgSQL-обработчик `DELETE`-запросов |
 
-> **Примечание:** PGHTTP обрабатывает **входящие** HTTP-запросы, диспетчеризуя их в PL/pgSQL. Для **исходящих** HTTP-запросов, инициируемых из PL/pgSQL, используйте [PGFetch](https://github.com/apostoldevel/module-PGFetch) — оба модуля разделяют один и тот же модуль `http` платформы db-platform.
+> **Примечание:** PGHTTP обрабатывает **входящие** HTTP-запросы, диспетчеризуя их в PL/pgSQL. Для **исходящих** HTTP-запросов, инициируемых из PL/pgSQL, используйте [PGFetch](https://github.com/apostoldevel/module-PGFetch) — оба модуля разделяют один и тот же модуль базы данных [db-http](https://github.com/apostoldevel/db-http).
 
 Настройка
 -
 
-```ini
-[module/PGHTTP]
-enable=true
+```json
+{
+  "modules": {
+    "PGHTTP": {
+      "enabled": true
+    }
+  }
+}
 ```
 
 Установка базы данных
 -
-Следуйте указаниям по установке PostgreSQL в описании [Апостол](https://github.com/apostoldevel/apostol#postgresql)
+Следуйте указаниям по установке PostgreSQL в описании [Апостол](https://github.com/apostoldevel/apostol#postgresql).
 
 Установка модуля
 -
-Следуйте указаниям по сборке и установке [Апостол](https://github.com/apostoldevel/apostol#%D1%81%D0%B1%D0%BE%D1%80%D0%BA%D0%B0-%D0%B8-%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%BA%D0%B0)
+Следуйте указаниям по сборке и установке [Апостол](https://github.com/apostoldevel/apostol#build-and-installation).
 
 ## Общая информация
 * Конечная точка по умолчанию (endpoint url): [http://localhost:8080/api/v1](http://localhost:8080/api/v1);
@@ -64,7 +69,7 @@ http[s]://<hosthame>[:<port>]/<route1>/<route2>/.../<routeN>
 * HTTP `5XX` коды возврата используются для внутренних ошибок - проблема на стороне сервера. Важно **НЕ** рассматривать это как операцию сбоя. Статус выполнения **НЕИЗВЕСТЕН** и может быть успешным.
 
 ## Передача параметров
-* Для `GET` методов параметры должны быть отправлены в виде `строки запроса (query string)` .
+* Для `GET` методов параметры должны быть отправлены в виде `строки запроса (query string)`.
 * Для остальных методов, некоторые параметры могут быть отправлены в виде `строки запроса (query string)`, а некоторые в виде `тела запроса (request body)`:
 * При отправке параметров в виде `тела запроса` допустимы следующие типы контента:
     * `application/x-www-form-urlencoded` для `query string`;

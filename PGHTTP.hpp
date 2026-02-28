@@ -1,89 +1,64 @@
-/*++
+#pragma once
 
-Program name:
+#ifdef WITH_POSTGRESQL
 
-  Apostol CRM
+#include "apostol/application.hpp"
+#include "apostol/http.hpp"
+#include "apostol/apostol_module.hpp"
+#include "apostol/pg.hpp"
 
-Module Name:
+#include <string>
+#include <string_view>
+#include <vector>
 
-  PGHTTP.hpp
+namespace apostol
+{
 
-Notices:
+// ─── PGHTTP ─────────────────────────────────────────────────────────────────
+//
+// Worker module that routes incoming HTTP requests to PostgreSQL functions:
+//   GET    → http.get(path, headers, params)
+//   POST   → http.post(path, headers, params, body)
+//   PUT    → http.put(path, headers, params, body)
+//   PATCH  → http.patch(path, headers, params, body)
+//   DELETE → http.delete(path, headers, params, body)
+//
+// Uses deferred responses: sets resp.set_deferred(true) and sends the
+// response asynchronously via connection_ctx when PG completes.
+//
+// Mirrors v1 CPGHTTP from src/modules/Workers/PGHTTP/.
+//
+class PGHTTP final : public ApostolModule
+{
+public:
+    /// Self-configures from app.module_config("PGHTTP"):
+    ///   "endpoints" → URL patterns (default ["/api/*"])
+    explicit PGHTTP(Application& app);
 
-  Module: Postgres HTTP
+    std::string_view name() const override { return "PGHTTP"; }
+    bool enabled() const override { return enabled_; }
+    bool check_location(const HttpRequest& req) const override;
+    void heartbeat(std::chrono::system_clock::time_point) override {}
 
-Author:
+protected:
+    void init_methods() override;
 
-  Copyright (c) Prepodobny Alen
+private:
+    void do_get(const HttpRequest& req, HttpResponse& resp);
+    void do_post(const HttpRequest& req, HttpResponse& resp);
+    void do_put(const HttpRequest& req, HttpResponse& resp);
+    void do_patch(const HttpRequest& req, HttpResponse& resp);
+    void do_delete(const HttpRequest& req, HttpResponse& resp);
 
-  mailto: alienufo@inbox.ru
-  mailto: ufocomp@gmail.com
+    /// Common dispatch: build SQL, execute async, set deferred.
+    void pq_dispatch(const HttpRequest& req, HttpResponse& resp,
+                     std::string_view pg_func, bool has_body);
 
---*/
+    PgPool&                   pool_;
+    std::vector<std::string>  endpoints_;
+    bool                      enabled_;
+};
 
-#ifndef APOSTOL_PQ_HTTP_HPP
-#define APOSTOL_PQ_HTTP_HPP
-//----------------------------------------------------------------------------------------------------------------------
+} // namespace apostol
 
-#include "FetchCommon.hpp"
-//----------------------------------------------------------------------------------------------------------------------
-
-extern "C++" {
-
-namespace Apostol {
-
-    namespace Module {
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        //-- CPGHTTP ---------------------------------------------------------------------------------------------------
-
-        //--------------------------------------------------------------------------------------------------------------
-
-        class CPGHTTP: public CFetchCommon {
-        private:
-
-            CStringListPairs m_Profiles;
-
-            void InitMethods() override;
-
-            void PQGet(CHTTPServerConnection *AConnection, const CString &Path);
-            void PQPost(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
-            void PQPatch(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
-            void PQPut(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
-            void PQDelete(CHTTPServerConnection *AConnection, const CString &Path, const CString &Body);
-
-            static void InitConfig(const CIniFile &IniFile, const CString &Section, CStringList &Config);
-
-        protected:
-
-            void DoGet(CHTTPServerConnection *AConnection) override;
-            void DoPost(CHTTPServerConnection *AConnection);
-            void DoPatch(CHTTPServerConnection *AConnection);
-            void DoPut(CHTTPServerConnection *AConnection);
-            void DoDelete(CHTTPServerConnection *AConnection);
-
-        public:
-
-            explicit CPGHTTP(CModuleProcess *AProcess);
-
-            ~CPGHTTP() override = default;
-
-            static CPGHTTP *CreateModule(CModuleProcess *AProcess) {
-                return new CPGHTTP(AProcess);
-            }
-
-            void Initialization(CModuleProcess *AProcess) override;
-
-            bool Enabled() override;
-
-            bool CheckLocation(const CLocation &Location) override;
-
-        };
-
-    }
-}
-
-using namespace Apostol::Module;
-}
-#endif //APOSTOL_PQ_HTTP_HPP
+#endif // WITH_POSTGRESQL

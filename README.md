@@ -1,9 +1,9 @@
-[![ru](https://img.shields.io/badge/lang-ru-green.svg)](https://github.com/apostoldevel/module-PGHTTP/blob/master/README.ru-RU.md)
+[![ru](https://img.shields.io/badge/lang-ru-green.svg)](README.ru-RU.md)
 
 Postgres HTTP
 -
 
-**PGHTTP** - a module for [Apostol](https://github.com/apostoldevel/apostol) + [db-platform](https://github.com/apostoldevel/db-platform) — **Apostol CRM**[^crm].
+**PGHTTP** — a module for [Apostol](https://github.com/apostoldevel/apostol) + [db-platform](https://github.com/apostoldevel/db-platform) — **Apostol CRM**[^crm].
 
 Description
 -
@@ -11,14 +11,14 @@ Description
 
 Incoming requests
 -
-The module directs incoming HTTP `GET`, `POST`, `PATCH`, `PUT`, `DELETE` requests to the PostgreSQL database by calling the `http.get`, `http.post`, `http.patch`, `http.put`, `http.delete` functions, respectively, to process them.
+The module directs incoming HTTP `GET`, `POST`, `PUT`, `PATCH`, `DELETE` requests to the PostgreSQL database by calling the `http.get`, `http.post`, `http.put`, `http.patch`, `http.delete` functions, respectively, to process them.
 
 Incoming requests are recorded in the `http.log` table.
 
 Database module
 -
 
-PGHTTP is tightly coupled to the **`http`** module of [db-platform](https://github.com/apostoldevel/db-platform) (`db/sql/platform/http/`).
+PGHTTP is tightly coupled to the **`http`** database module — [db-http](https://github.com/apostoldevel/db-http).
 
 All incoming HTTP traffic is dispatched to PL/pgSQL handlers and logged in this module:
 
@@ -28,18 +28,23 @@ All incoming HTTP traffic is dispatched to PL/pgSQL handlers and logged in this 
 | `http.write_to_log(...)` | Helper function called by each handler to record the request before processing |
 | `http.get(path, headers, params)` | PL/pgSQL handler for `GET` requests |
 | `http.post(path, headers, params, body)` | PL/pgSQL handler for `POST` requests |
-| `http.patch(path, headers, params, body)` | PL/pgSQL handler for `PATCH` requests |
 | `http.put(path, headers, params, body)` | PL/pgSQL handler for `PUT` requests |
+| `http.patch(path, headers, params, body)` | PL/pgSQL handler for `PATCH` requests |
 | `http.delete(path, headers, params, body)` | PL/pgSQL handler for `DELETE` requests |
 
-> **Note:** PGHTTP handles **incoming** HTTP requests dispatched into PL/pgSQL. For **outgoing** HTTP requests initiated from PL/pgSQL, see [PGFetch](https://github.com/apostoldevel/module-PGFetch) — both modules share the same `http` db-platform module.
+> **Note:** PGHTTP handles **incoming** HTTP requests dispatched into PL/pgSQL. For **outgoing** HTTP requests initiated from PL/pgSQL, see [PGFetch](https://github.com/apostoldevel/module-PGFetch) — both modules share the same [db-http](https://github.com/apostoldevel/db-http) database module.
 
 Configuration
 -
 
-```ini
-[module/PGHTTP]
-enable=true
+```json
+{
+  "modules": {
+    "PGHTTP": {
+      "enabled": true
+    }
+  }
+}
 ```
 
 Database installation
@@ -68,7 +73,7 @@ http[s]://<hosthame>[:<port>]/<route1>/<route2>/.../<routeN>
 
 ## Passing Parameters
 * For `GET` endpoints, parameters should be sent as a `query string`.
-* For others endpoints, some parameters can be sent as a `query string`, and some as a request body:
+* For other endpoints, some parameters can be sent as a `query string`, and some as a request body:
 * The following content types are allowed when sending parameters as a request `body`:
     * `application/x-www-form-urlencoded` for `query string`;
     * `multipart/form-data` for `HTML forms`;
