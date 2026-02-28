@@ -3,7 +3,7 @@
 Postgres HTTP
 -
 
-**PGHTTP** — a module for [Apostol](https://github.com/apostoldevel/apostol) + [db-platform](https://github.com/apostoldevel/db-platform) — **Apostol CRM**[^crm].
+**Module** for [Apostol](https://github.com/apostoldevel/apostol) + [db-platform](https://github.com/apostoldevel/db-platform) — **Apostol CRM**[^crm].
 
 Description
 -
@@ -33,28 +33,6 @@ All incoming HTTP traffic is dispatched to PL/pgSQL handlers and logged in this 
 | `http.delete(path, headers, params, body)` | PL/pgSQL handler for `DELETE` requests |
 
 > **Note:** PGHTTP handles **incoming** HTTP requests dispatched into PL/pgSQL. For **outgoing** HTTP requests initiated from PL/pgSQL, see [PGFetch](https://github.com/apostoldevel/module-PGFetch) — both modules share the same [db-http](https://github.com/apostoldevel/db-http) database module.
-
-Configuration
--
-
-```json
-{
-  "modules": {
-    "PGHTTP": {
-      "enabled": true
-    }
-  }
-}
-```
-
-Database installation
--
-Follow the instructions for installing PostgreSQL in the description of [Apostol](https://github.com/apostoldevel/apostol#postgresql).
-
-Module installation
--
-
-Follow the instructions for building and installing [Apostol](https://github.com/apostoldevel/apostol#build-and-installation).
 
 General information
 -
@@ -251,5 +229,25 @@ $$ LANGUAGE plpgsql
   SECURITY DEFINER
   SET search_path = http, pg_temp;
 ```
+
+Configuration
+-
+
+```json
+{
+  "modules": {
+    "PGHTTP": {
+      "enabled": true
+    }
+  }
+}
+```
+
+Installation
+-
+
+Follow the instructions for installing PostgreSQL in the description of [Apostol](https://github.com/apostoldevel/apostol#postgresql).
+
+Follow the build and installation instructions for [Apostol](https://github.com/apostoldevel/apostol#build-and-installation).
 
 [^crm]: **Apostol CRM** is an abstract term, not a standalone product. It refers to any project that uses both the [Apostol](https://github.com/apostoldevel/apostol) C++ framework and [db-platform](https://github.com/apostoldevel/db-platform) together through purpose-built modules and processes. Each framework can be used independently; combined, they form a full-stack backend platform.
