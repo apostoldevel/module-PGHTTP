@@ -104,7 +104,7 @@ void PGHTTP::pq_dispatch(const HttpRequest& req, HttpResponse& resp,
             body_json = pq_quote_literal(form_to_json(req.body));
         }
 
-        sql = fmt::format("SELECT * FROM {}({}, {}::jsonb, {}::jsonb, {}::jsonb)",
+        sql = fmt::format("SELECT * FROM {}({}, {}::jsonb, {}::jsonb, {}::json)",
                           pg_func, path_q, pq_quote_literal(headers_j),
                           pq_quote_literal(params_j), body_json);
     } else {
