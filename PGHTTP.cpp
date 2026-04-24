@@ -110,7 +110,7 @@ namespace Apostol {
 
             SQL.Add(CString()
                             .MaxFormatSize(256 + Path.Size() + caHeaders.Size() + caParams.Size() + caBody.Size())
-                            .Format("SELECT * FROM http.post(%s, %s::jsonb, %s::jsonb, %s::jsonb);",
+                            .Format("SELECT * FROM http.post(%s, %s::jsonb, %s::jsonb, %s::json);",
                                     PQQuoteLiteral(Path).c_str(),
                                     PQQuoteLiteral(caHeaders).c_str(),
                                     PQQuoteLiteral(caParams).c_str(),
@@ -138,7 +138,7 @@ namespace Apostol {
 
             SQL.Add(CString()
                             .MaxFormatSize(256 + Path.Size() + caHeaders.Size() + caParams.Size() + caBody.Size())
-                            .Format("SELECT * FROM http.patch(%s, %s::jsonb, %s::jsonb, %s::jsonb);",
+                            .Format("SELECT * FROM http.patch(%s, %s::jsonb, %s::jsonb, %s::json);",
                                     PQQuoteLiteral(Path).c_str(),
                                     PQQuoteLiteral(caHeaders).c_str(),
                                     PQQuoteLiteral(caParams).c_str(),
@@ -166,7 +166,7 @@ namespace Apostol {
 
             SQL.Add(CString()
                             .MaxFormatSize(256 + Path.Size() + caHeaders.Size() + caParams.Size() + caBody.Size())
-                            .Format("SELECT * FROM http.put(%s, %s::jsonb, %s::jsonb, %s::jsonb);",
+                            .Format("SELECT * FROM http.put(%s, %s::jsonb, %s::jsonb, %s::json);",
                                     PQQuoteLiteral(Path).c_str(),
                                     PQQuoteLiteral(caHeaders).c_str(),
                                     PQQuoteLiteral(caParams).c_str(),
@@ -194,7 +194,7 @@ namespace Apostol {
 
             SQL.Add(CString()
                             .MaxFormatSize(256 + Path.Size() + caHeaders.Size() + caParams.Size() + caBody.Size())
-                            .Format("SELECT * FROM http.delete(%s, %s::jsonb, %s::jsonb, %s::jsonb);",
+                            .Format("SELECT * FROM http.delete(%s, %s::jsonb, %s::jsonb, %s::json);",
                                     PQQuoteLiteral(Path).c_str(),
                                     PQQuoteLiteral(caHeaders).c_str(),
                                     PQQuoteLiteral(caParams).c_str(),
