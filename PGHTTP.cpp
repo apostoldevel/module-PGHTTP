@@ -113,6 +113,13 @@ void PGHTTP::pq_dispatch(const HttpRequest& req, HttpResponse& resp,
                           pq_quote_literal(params_j));
     }
 
+    // quiet: the statement carries the request as the outside world sent it —
+    // every header (Authorization: an OCPI partner's `Token …`, Basic, Cookie),
+    // the query string and the body (OCPI /credentials exchanges tokens in it;
+    // webhooks bring payer data). PgPool logs statement text, and a dedicated
+    // postgres.log keeps it at debug, so without this every call of a partner
+    // would write its credential there. Method, path and status stay in the
+    // access log of the proxy in front.
     exec_sql(pool_, req, resp, std::move(sql),
         [](std::shared_ptr<HttpConnection> conn, std::vector<PgResult> results) {
             HttpResponse r;
@@ -152,7 +159,8 @@ void PGHTTP::pq_dispatch(const HttpRequest& req, HttpResponse& resp,
             }
 
             conn->send_response(r);
-        });
+        },
+        /*quiet=*/true);
 }
 
 } // namespace apostol
